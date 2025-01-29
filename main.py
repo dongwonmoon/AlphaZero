@@ -12,13 +12,23 @@ logging.basicConfig(
 def main():
     board_size = 8
     action_size = 4672
-    num_simulations = 20
+    num_simulations = 10  # 20
     num_epochs = 100
-    num_games_per_epoch = 20
+    num_games_per_epoch = 5  # 20
     temperature = 1.0
     evaluation_games = 10
 
-    model = AlphaZeroNet(board_size, action_size)
+    num_res_blocks = 1
+    in_channels = 64  # 128
+    mid_channels = 16  # 32
+
+    model = AlphaZeroNet(
+        board_size,
+        action_size,
+        num_res_blocks=num_res_blocks,
+        in_channels=in_channels,
+        mid_channels=mid_channels,
+    )
     device = "cuda" if torch.cuda.is_available() else "cpu"
     model = model.to(device)
 
@@ -26,6 +36,9 @@ def main():
         board_size=board_size,
         action_size=action_size,
         num_simulations=num_simulations,
+        num_res_blocks=num_res_blocks,
+        in_channels=in_channels,
+        mid_channels=mid_channels,
         lr=0.001,
         weight_decay=1e-4,
     )

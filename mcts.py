@@ -79,7 +79,7 @@ class MCTS:
         self.num_simulations = num_simulations
         self.temperature = temperature
 
-    def search(self, initial_state):
+    def search(self, initial_state, cur_p):
         root = Node(initial_state)
         for _ in range(self.num_simulations):
             node = root
@@ -94,13 +94,13 @@ class MCTS:
                 policy = policy.squeeze().detach().numpy()
                 node.expand(policy, self.temperature)
 
-            value = self.simulate(node.state)
+            value = self.simulate(node.state, cur_p)
             node.backpropagate(value)
 
         best_child = max(root.children, key=lambda n: n.visits)
         return best_child.state.board.peek(), policy
 
-    def simulate(self, state):
+    def simulate(self, state, cur_p):
         while not state.is_game_over():
             board_state = state.get_board_state()
             board_state = board_state[np.newaxis, ...]
@@ -112,7 +112,7 @@ class MCTS:
             }
             move = max(move_probs, key=move_probs.get)
             state = state.apply_move(move)
-        return state.get_result(1)
+        return state.get_result(cur_p)
 
 
 if __name__ == "__main__":

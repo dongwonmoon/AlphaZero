@@ -10,14 +10,22 @@ from concurrent.futures import ProcessPoolExecutor
 
 class AlphaZeroTrainer:
     def __init__(
-        self, board_size, action_size, num_simulations, lr=0.001, weight_decay=1e-4
+        self,
+        board_size,
+        action_size,
+        num_simulations,
+        num_res_blocks,
+        in_channels,
+        mid_channels,
+        lr=0.001,
+        weight_decay=1e-4,
     ):
         self.board_size = board_size
         self.action_size = action_size
         self.num_simulations = num_simulations
-        self.model = AlphaZeroNet(board_size, action_size).to(
-            "cuda" if torch.cuda.is_available() else "cpu"
-        )
+        self.model = AlphaZeroNet(
+            board_size, action_size, num_res_blocks, in_channels, mid_channels
+        ).to("cuda" if torch.cuda.is_available() else "cpu")
         self.optimizer = optim.Adam(
             self.model.parameters(), lr=lr, weight_decay=weight_decay
         )
