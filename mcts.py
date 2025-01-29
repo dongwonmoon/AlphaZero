@@ -3,6 +3,7 @@ import random
 from game import ChessGame
 import torch
 import numpy as np
+import itertools
 
 
 class Node:
@@ -73,7 +74,28 @@ class Node:
             self.parent.backpropagate(value)
 
 
+FILES = "abcdefgh"
+RANKS = "12345678"
+
+# 64개 위치를 모두 생성
+SQUARES = [f + r for f, r in itertools.product(FILES, RANKS)]
+
+# 모든 가능한 움직임 조합 생성
+ALL_MOVES = [
+    from_sq + to_sq for from_sq in SQUARES for to_sq in SQUARES if from_sq != to_sq
+]
+
+PROMOTIONS = ["q", "r", "b", "n"]
+ALL_MOVES += [move + promo for move in ALL_MOVES for promo in PROMOTIONS]
+
+uci_to_index = {move: i for i, move in enumerate(ALL_MOVES)}
+
+
 class MCTS:
+
+    # UCI -> Index 변환 딕셔너리 생성
+    uci_to_index = {move: i for i, move in enumerate(ALL_MOVES)}
+
     def __init__(self, model, num_simulations=800, temperature=1.0):
         self.model = model
         self.num_simulations = num_simulations
@@ -101,15 +123,17 @@ class MCTS:
         return best_child.state.board.peek(), policy
 
     def simulate(self, state, cur_p):
+
         while not state.is_game_over():
             board_state = state.get_board_state()
             board_state = board_state[np.newaxis, ...]
             policy, value = self.model(board_state)
+            policy = policy.squeeze().detach().numpy()
             legal_moves = state.get_legal_moves()
-            move_probs = {
-                move: prob
-                for move, prob in zip(legal_moves, policy.squeeze().detach().numpy())
-            }
+
+            uci_idx = [uci_to_index.get(move.uci(), -1) for move in legal_moves]
+
+            move_probs = {move: policy[idx] for move, idx in zip(legal_moves, uci_idx)}
             move = max(move_probs, key=move_probs.get)
             state = state.apply_move(move)
         return state.get_result(cur_p)

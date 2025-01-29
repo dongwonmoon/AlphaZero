@@ -33,6 +33,8 @@ class AlphaZeroNet(nn.Module):
         super(AlphaZeroNet, self).__init__()
         self.board_size = board_size
         self.action_size = action_size
+        self.device = "cuda" if torch.cuda.is_available() else "cpu"
+
         self.conv1 = nn.Conv2d(14, in_channels, kernel_size=3, padding=1)
         self.bn1 = nn.BatchNorm2d(in_channels)
         self.res_blocks = nn.Sequential(

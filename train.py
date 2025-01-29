@@ -19,10 +19,12 @@ class AlphaZeroTrainer:
         mid_channels,
         lr=0.001,
         weight_decay=1e-4,
+        batch_size=8,
     ):
         self.board_size = board_size
         self.action_size = action_size
         self.num_simulations = num_simulations
+        self.batch_size = batch_size
         self.model = AlphaZeroNet(
             board_size, action_size, num_res_blocks, in_channels, mid_channels
         ).to("cuda" if torch.cuda.is_available() else "cpu")
@@ -69,7 +71,9 @@ class AlphaZeroTrainer:
             self.model.device
         )
         dataset = torch.utils.data.TensorDataset(states, policies, rewards)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=64, shuffle=True)
+        dataloader = torch.utils.data.DataLoader(
+            dataset, batch_size=self.batch_size, shuffle=True
+        )
         for batch_states, batch_policies, batch_rewards in dataloader:
             pred_policies, pred_values = self.model(batch_states)
             loss_policy = -(batch_policies.detach() * torch.log(pred_policies)).mean()

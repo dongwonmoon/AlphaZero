@@ -11,14 +11,15 @@ logging.basicConfig(
 
 def main():
     board_size = 8
-    action_size = 4672
-    num_simulations = 10  # 20
+    action_size = 20160
+    num_simulations = 20
     num_epochs = 100
-    num_games_per_epoch = 5  # 20
+    num_games_per_epoch = 20
     temperature = 1.0
     evaluation_games = 10
+    batch_size = 32
 
-    num_res_blocks = 1
+    num_res_blocks = 3
     in_channels = 64  # 128
     mid_channels = 16  # 32
 
@@ -41,6 +42,7 @@ def main():
         mid_channels=mid_channels,
         lr=0.001,
         weight_decay=1e-4,
+        batch_size=batch_size,
     )
 
     for epoch in range(num_epochs):
