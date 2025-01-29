@@ -22,5 +22,4 @@ class SelfPlay:
             print(self.game)
         winner = self.game.get_result(1)
         rewards = [winner for i in range(len(states))]
-        print(rewards)
         return states, policies, rewards
