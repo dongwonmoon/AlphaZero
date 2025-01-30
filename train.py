@@ -19,14 +19,12 @@ class AlphaZeroTrainer:
         mid_channels,
         lr=0.001,
         weight_decay=1e-4,
-        gamma=0.99,
         batch_size=8,
     ):
         self.board_size = board_size
         self.action_size = action_size
         self.num_simulations = num_simulations
         self.batch_size = batch_size
-        self.gamma = gamma
         self.model = AlphaZeroNet(
             board_size, action_size, num_res_blocks, in_channels, mid_channels
         ).to("cuda" if torch.cuda.is_available() else "cpu")
@@ -80,13 +78,11 @@ class AlphaZeroTrainer:
         )
         for batch_states, batch_policies, batch_rewards in dataloader:
             pred_policies, pred_values = self.model(batch_states)
-
-            advantages = batch_rewards - pred_values.detach().squeeze()
-
-            loss_policy = -(advantages * torch.log(pred_policies)).mean()
+            loss_policy = -(
+                batch_policies.detach() * torch.log(pred_policies + 1e-8)
+            ).mean()
             loss_value = self.criterion_value(pred_values.squeeze(), batch_rewards)
             loss = loss_policy + loss_value
-
             self.optimizer.zero_grad()
             loss.backward()
             self.optimizer.step()
