@@ -3,14 +3,13 @@ from mcts import MCTS
 
 
 class SelfPlay:
-    def __init__(self, model, game, num_simulations, temperature=1.0):
+    def __init__(self, model, game, num_simulations):
         self.model = model
         self.game = game
         self.num_simulations = num_simulations
-        self.temperature = temperature
 
     def play(self):
-        mcts = MCTS(self.model, self.num_simulations, self.temperature)
+        mcts = MCTS(self.model, self.num_simulations)
         cur_p = 1
         states, policies, rewards = [], [], []
 

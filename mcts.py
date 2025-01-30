@@ -55,7 +55,7 @@ class Node:
 
         return best_child
 
-    def expand(self, policy, temperature):
+    def expand(self, policy):
         legal_moves = self.state.get_legal_moves()
         uci_idx = [
             (
@@ -69,28 +69,9 @@ class Node:
         move_probs = {move: policy[idx] for move, idx in zip(legal_moves, uci_idx)}
         for move in legal_moves:
             prob = move_probs.get(move, 0)
-            try:
-                action = self.select_action(move_probs, temperature)
-            except:
-                action = move
-            new_state = self.state.apply_move(action)
+            new_state = self.state.apply_move(move)
             child_node = Node(new_state, parent=self, prior=prob)
             self.children.append(child_node)
-
-    def select_action(self, temperature):
-        visit_counts = np.array([child.visits for child in self.children])
-        actions = [child.state.last_move for child in self.children]
-
-        if temperature == 0:
-            action = actions[np.argmax(visit_counts)]
-        elif temperature == float("inf"):
-            action = np.random.choice(actions)
-        else:
-            visit_count_distribution = visit_counts ** (1 / temperature)
-            visit_count_distribution /= visit_count_distribution.sum()
-            action = np.random.choice(actions, p=visit_count_distribution)
-
-        return action
 
     def backpropagate(self, value):
         self.visits += 1
@@ -100,16 +81,14 @@ class Node:
 
 
 class MCTS:
-    def __init__(self, model, num_simulations=800, temperature=1.0):
+    def __init__(self, model, num_simulations=5):
         self.model = model
         self.num_simulations = num_simulations
-        self.temperature = temperature
 
     def search(self, initial_state, cur_p):
         root = Node(initial_state)
         for _ in range(self.num_simulations):
             node = root
-
             while not node.state.is_game_over() and node.is_fully_expanded():
                 node = node.select_child()
 
@@ -118,7 +97,7 @@ class MCTS:
                 board_state = board_state[np.newaxis, ...]
                 policy, _ = self.model(board_state)
                 policy = policy.squeeze().detach().numpy()
-                node.expand(policy, self.temperature)
+                node.expand(policy)
 
             value = self.simulate(node.state, cur_p)
             node.backpropagate(value)
@@ -127,7 +106,6 @@ class MCTS:
         return best_child.state.board.peek(), policy
 
     def simulate(self, state, cur_p):
-
         while not state.is_game_over():
             board_state = state.get_board_state()
             board_state = board_state[np.newaxis, ...]
@@ -158,7 +136,7 @@ if __name__ == "__main__":
     print(game)
 
     model = AlphaZeroNet(8, 4032, 5, 64, 16)
-    mcts = MCTS(model, num_simulations=100)
-    best_move = mcts.search(game)
+    mcts = MCTS(model, num_simulations=10)
+    best_move = mcts.search(game, 1)
 
     print(f"\nBest move: {best_move}")

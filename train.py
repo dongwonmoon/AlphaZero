@@ -34,29 +34,25 @@ class AlphaZeroTrainer:
         self.criterion_policy = nn.CrossEntropyLoss()
         self.criterion_value = nn.MSELoss()
 
-    def train(self, epochs, num_games_per_epoch, temperature):
+    def train(self, epochs, num_games_per_epoch):
         for epoch in range(epochs):
             print(f"Epoch {epoch + 1}/{epochs}")
-            training_data = self.generate_self_play_data_parallel(
-                num_games_per_epoch, temperature
-            )
+            training_data = self.generate_self_play_data_parallel(num_games_per_epoch)
             self.update_model(training_data)
 
-    def generate_self_play_data_parallel(
-        self, num_games, temperature, max_workers=None
-    ):
+    def generate_self_play_data_parallel(self, num_games, max_workers=None):
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
             futures = [
-                executor.submit(self._generate_single_game_data, temperature)
+                executor.submit(self._generate_single_game_data)
                 for _ in range(num_games)
             ]
             results = [future.result() for future in futures]
         data = [item for result in results for item in result]
         return data
 
-    def _generate_single_game_data(self, temperature):
+    def _generate_single_game_data(self):
         game = ChessGame()
-        self_play = SelfPlay(self.model, game, self.num_simulations, temperature)
+        self_play = SelfPlay(self.model, game, self.num_simulations)
         states, policies, rewards = self_play.play()
         return list(zip(states, policies, rewards))
 
@@ -101,4 +97,4 @@ class AlphaZeroTrainer:
 
 if __name__ == "__main__":
     trainer = AlphaZeroTrainer(8, 4032, 10, 5, 64, 16)
-    trainer.train(epochs=10, num_games_per_epoch=10, temperature=1.0)
+    trainer.train(epochs=10, num_games_per_epoch=10)
