@@ -2,11 +2,6 @@ import concurrent.futures
 import torch
 import logging
 
-# 로그 설정
-logging.basicConfig(
-    filename="evaluation.log", level=logging.INFO, format="%(asctime)s - %(message)s"
-)
-
 
 def evaluate_single_game(model, num_simulations, temperature):
     from game import ChessGame
@@ -56,10 +51,7 @@ def evaluate_model_parallel(model, num_games=20, num_simulations=50, temperature
 if __name__ == "__main__":
     from model import AlphaZeroNet
 
-    board_size = 8
-    action_size = 4672
-    model = AlphaZeroNet(board_size, action_size)
-    model.load_state_dict(torch.load("alphazero_chess.pth"))
+    model = AlphaZeroNet(8, 4032, 5, 64, 16)
     model.eval()
     win_rate, loss_rate, draw_rate = evaluate_model_parallel(
         model, num_games=50, temperature=0.0

@@ -94,9 +94,5 @@ class AlphaZeroTrainer:
 
 
 if __name__ == "__main__":
-    board_size = 8
-    action_size = 4672
-    num_simulations = 100
-    trainer = AlphaZeroTrainer(board_size, action_size, num_simulations)
+    trainer = AlphaZeroTrainer(8, 4032, 10, 5, 64, 16)
     trainer.train(epochs=10, num_games_per_epoch=10, temperature=1.0)
-    trainer.save_model("alphazero_chess.pth")

@@ -48,7 +48,9 @@ class AlphaZeroNet(nn.Module):
             nn.BatchNorm2d(2),
             nn.ReLU(),
             nn.Flatten(),
-            nn.Linear(2 * board_size * board_size, self.action_size),
+            nn.Linear(2 * board_size * board_size, 32),
+            nn.Mish(),
+            nn.Linear(32, action_size),
             nn.Softmax(dim=1),
         )
         self.value_head = nn.Sequential(
@@ -57,7 +59,7 @@ class AlphaZeroNet(nn.Module):
             nn.ReLU(),
             nn.Flatten(),
             nn.Linear(board_size * board_size, 256),
-            nn.ReLU(),
+            nn.Mish(),
             nn.Linear(256, 1),
             nn.Tanh(),
         )
@@ -73,5 +75,5 @@ class AlphaZeroNet(nn.Module):
 
 
 if __name__ == "__main__":
-    model = AlphaZeroNet(8, 64, 5, 128, 16)
+    model = AlphaZeroNet(8, 4032, 5, 64, 16)
     summary(model, (8, 8, 14))

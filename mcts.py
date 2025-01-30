@@ -5,6 +5,22 @@ import torch
 import numpy as np
 import itertools
 
+FILES = "abcdefgh"
+RANKS = "12345678"
+
+# 64개 위치를 모두 생성
+SQUARES = [f + r for f, r in itertools.product(FILES, RANKS)]
+
+# 모든 가능한 움직임 조합 생성
+ALL_MOVES = [
+    from_sq + to_sq for from_sq in SQUARES for to_sq in SQUARES if from_sq != to_sq
+]
+
+PROMOTIONS = ["q", "r", "b", "n"]
+ALL_MOVES += [move + promo for move in ALL_MOVES for promo in PROMOTIONS]
+
+uci_to_index = {move: i for i, move in enumerate(ALL_MOVES)}
+
 
 class Node:
     def __init__(self, state, parent=None, prior=0):
@@ -41,7 +57,16 @@ class Node:
 
     def expand(self, policy, temperature):
         legal_moves = self.state.get_legal_moves()
-        move_probs = {move: prob for move, prob in zip(legal_moves, policy)}
+        uci_idx = [
+            (
+                uci_to_index.get(move.uci()[:-1], -1)
+                if len(move.uci()) > 4
+                else uci_to_index.get(move.uci(), -1)
+            )
+            for move in legal_moves
+        ]
+
+        move_probs = {move: policy[idx] for move, idx in zip(legal_moves, uci_idx)}
         for move in legal_moves:
             prob = move_probs.get(move, 0)
             try:
@@ -74,28 +99,7 @@ class Node:
             self.parent.backpropagate(value)
 
 
-FILES = "abcdefgh"
-RANKS = "12345678"
-
-# 64개 위치를 모두 생성
-SQUARES = [f + r for f, r in itertools.product(FILES, RANKS)]
-
-# 모든 가능한 움직임 조합 생성
-ALL_MOVES = [
-    from_sq + to_sq for from_sq in SQUARES for to_sq in SQUARES if from_sq != to_sq
-]
-
-PROMOTIONS = ["q", "r", "b", "n"]
-ALL_MOVES += [move + promo for move in ALL_MOVES for promo in PROMOTIONS]
-
-uci_to_index = {move: i for i, move in enumerate(ALL_MOVES)}
-
-
 class MCTS:
-
-    # UCI -> Index 변환 딕셔너리 생성
-    uci_to_index = {move: i for i, move in enumerate(ALL_MOVES)}
-
     def __init__(self, model, num_simulations=800, temperature=1.0):
         self.model = model
         self.num_simulations = num_simulations
@@ -131,7 +135,14 @@ class MCTS:
             policy = policy.squeeze().detach().numpy()
             legal_moves = state.get_legal_moves()
 
-            uci_idx = [uci_to_index.get(move.uci(), -1) for move in legal_moves]
+            uci_idx = [
+                (
+                    uci_to_index.get(move.uci()[:-1], -1)
+                    if len(move.uci()) > 4
+                    else uci_to_index.get(move.uci(), -1)
+                )
+                for move in legal_moves
+            ]
 
             move_probs = {move: policy[idx] for move, idx in zip(legal_moves, uci_idx)}
             move = max(move_probs, key=move_probs.get)
@@ -146,7 +157,7 @@ if __name__ == "__main__":
     print("Initial board:")
     print(game)
 
-    model = AlphaZeroNet(8, 4672)
+    model = AlphaZeroNet(8, 4032, 5, 64, 16)
     mcts = MCTS(model, num_simulations=100)
     best_move = mcts.search(game)
 
