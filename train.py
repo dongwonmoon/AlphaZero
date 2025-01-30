@@ -76,6 +76,8 @@ class AlphaZeroTrainer:
         dataloader = torch.utils.data.DataLoader(
             dataset, batch_size=self.batch_size, shuffle=True
         )
+
+        # MuZero와 비슷하지만, dinamic loss를 사용하지 않음. (모델 단순화)
         for batch_states, batch_policies, batch_rewards in dataloader:
             pred_policies, pred_values = self.model(batch_states)
             loss_policy = -(
