@@ -17,6 +17,7 @@ class AlphaZeroTrainer:
         num_res_blocks,
         in_channels,
         mid_channels,
+        temperature=1,
         lr=0.001,
         weight_decay=1e-4,
         batch_size=8,
@@ -24,6 +25,7 @@ class AlphaZeroTrainer:
         self.board_size = board_size
         self.action_size = action_size
         self.num_simulations = num_simulations
+        self.temperature = temperature
         self.batch_size = batch_size
         self.model = AlphaZeroNet(
             board_size, action_size, num_res_blocks, in_channels, mid_channels
@@ -52,7 +54,7 @@ class AlphaZeroTrainer:
 
     def _generate_single_game_data(self):
         game = ChessGame()
-        self_play = SelfPlay(self.model, game, self.num_simulations)
+        self_play = SelfPlay(self.model, game, self.num_simulations, self.temperature)
         states, policies, rewards = self_play.play()
         return list(zip(states, policies, rewards))
 
