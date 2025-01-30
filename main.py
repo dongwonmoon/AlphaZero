@@ -15,6 +15,7 @@ def main():
     num_simulations = 5
     num_epochs = 100
     num_games_per_epoch = 10
+    temperature = 1
     evaluation_games = 5
     batch_size = 32
 
@@ -39,6 +40,7 @@ def main():
         num_res_blocks=num_res_blocks,
         in_channels=in_channels,
         mid_channels=mid_channels,
+        temperature=temperature,
         lr=3e-4,
         weight_decay=1e-4,
         batch_size=batch_size,
@@ -68,6 +70,7 @@ def main():
             model,
             num_games=evaluation_games,
             num_simulations=num_simulations,
+            temperature=0.1,
         )
         print(
             f"Win Rate: {win_rate:.2f}, Loss Rate: {loss_rate:.2f}, Draw Rate: {draw_rate:.2f}"
