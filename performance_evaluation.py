@@ -3,25 +3,27 @@ import torch
 import logging
 
 
-def evaluate_single_game(model, num_simulations):
+def evaluate_single_game(model, num_simulations, temperature):
     from game import ChessGame
     from self_play import SelfPlay
 
     game = ChessGame()
-    self_play = SelfPlay(model, game, num_simulations=num_simulations)
+    self_play = SelfPlay(
+        model, game, num_simulations=num_simulations, temperature=temperature
+    )
     actions, _, rewards = self_play.play()
     logging.info(f"Game finished - Actions: {len(actions)}, Result: {rewards[-1]}")
     return rewards[-1]  # 게임 결과 반환 (1: 승리, -1: 패배, 0: 무승부)
 
 
-def evaluate_model_parallel(model, num_games=20, num_simulations=50):
+def evaluate_model_parallel(model, num_games=20, num_simulations=50, temperature=0):
     wins, losses, draws = 0, 0, 0
 
     # 병렬 실행 설정
     with concurrent.futures.ProcessPoolExecutor() as executor:
         # 각 게임 평가를 병렬로 실행
         futures = [
-            executor.submit(evaluate_single_game, model, num_simulations)
+            executor.submit(evaluate_single_game, model, num_simulations, temperature)
             for _ in range(num_games)
         ]
 
