@@ -81,17 +81,10 @@ class AlphaZeroTrainer:
         for batch_states, batch_policies, batch_rewards in dataloader:
             pred_policies, pred_values = self.model(batch_states)
 
-            returns = []
-            R = 0
-            for r in reversed(batch_rewards.tolist()):
-                R = r + self.gamma * R
-                returns.insert(0, R)
-            returns = torch.tensor(returns, dtype=torch.float32).to(self.model.device)
-
-            advantages = returns - pred_values.detach().squeeze()
+            advantages = batch_rewards - pred_values.detach().squeeze()
 
             loss_policy = -(advantages * torch.log(pred_policies)).mean()
-            loss_value = self.criterion_value(pred_values.squeeze(), returns)
+            loss_value = self.criterion_value(pred_values.squeeze(), batch_rewards)
             loss = loss_policy + loss_value
 
             self.optimizer.zero_grad()
