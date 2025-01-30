@@ -44,8 +44,10 @@ class AlphaZeroTrainer:
             )
             self.update_model(training_data)
 
-    def generate_self_play_data_parallel(self, num_games, temperature):
-        with ProcessPoolExecutor() as executor:
+    def generate_self_play_data_parallel(
+        self, num_games, temperature, max_workers=None
+    ):
+        with ProcessPoolExecutor(max_workers=max_workers) as executor:
             futures = [
                 executor.submit(self._generate_single_game_data, temperature)
                 for _ in range(num_games)
