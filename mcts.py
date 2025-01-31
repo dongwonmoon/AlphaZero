@@ -117,7 +117,8 @@ class MCTS:
 
         action_idx = root.select_action(self.temperature)
         best_child = root.children[action_idx]
-        return best_child.state.board.peek(), policy
+
+        return best_child.state.board.peek(), best_child.prior
 
     def simulate(self, state, cur_p):
         while not state.is_game_over():
