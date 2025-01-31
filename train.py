@@ -98,5 +98,6 @@ class AlphaZeroTrainer:
 
 
 if __name__ == "__main__":
-    trainer = AlphaZeroTrainer(8, 4032, 10, 5, 64, 16)
-    trainer.train(epochs=10, num_games_per_epoch=10)
+    trainer = AlphaZeroTrainer(8, 4032, 10, 3, 32, 8, temperature=1.5)
+    trainer.load_model("./model/alphazero_chess_epoch_2.pth")
+    trainer._generate_single_game_data()

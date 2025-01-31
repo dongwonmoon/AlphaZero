@@ -12,16 +12,16 @@ logging.basicConfig(
 def main():
     board_size = 8
     action_size = 4032
-    num_simulations = 5
+    num_simulations = 10
     num_epochs = 100
-    num_games_per_epoch = 10
+    num_games_per_epoch = 3
     temperature = 1
     evaluation_games = 5
     batch_size = 32
 
     num_res_blocks = 3
-    in_channels = 32
-    mid_channels = 8
+    in_channels = 64
+    mid_channels = 16
 
     model = AlphaZeroNet(
         board_size,
@@ -65,19 +65,20 @@ def main():
         trainer.save_model(checkpoint_path)
         print(f"Model saved to {checkpoint_path}.")
 
-        print("Evaluating model...")
-        win_rate, loss_rate, draw_rate = evaluate_model_parallel(
-            model,
-            num_games=evaluation_games,
-            num_simulations=num_simulations,
-            temperature=0.1,
-        )
-        print(
-            f"Win Rate: {win_rate:.2f}, Loss Rate: {loss_rate:.2f}, Draw Rate: {draw_rate:.2f}"
-        )
-        logging.info(
-            f"Evaluation - Win Rate: {win_rate:.2f}, Loss Rate: {loss_rate:.2f}, Draw Rate: {draw_rate:.2f}"
-        )
+        if (epoch + 1) % 5 == 0:
+            print("Evaluating model...")
+            win_rate, loss_rate, draw_rate = evaluate_model_parallel(
+                model,
+                num_games=evaluation_games,
+                num_simulations=num_simulations,
+                temperature=0.1,
+            )
+            print(
+                f"Win Rate: {win_rate:.2f}, Loss Rate: {loss_rate:.2f}, Draw Rate: {draw_rate:.2f}"
+            )
+            logging.info(
+                f"Evaluation - Win Rate: {win_rate:.2f}, Loss Rate: {loss_rate:.2f}, Draw Rate: {draw_rate:.2f}"
+            )
 
     print("\nTraining complete. Final model saved.")
 
