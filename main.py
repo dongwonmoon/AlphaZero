@@ -12,16 +12,16 @@ logging.basicConfig(
 def main():
     board_size = 8
     action_size = 4032
-    num_simulations = 10
+    num_simulations = 10 
     num_epochs = 100
-    num_games_per_epoch = 3
+    num_games_per_epoch = 10 # 
     temperature = 1
     evaluation_games = 5
     batch_size = 32
 
     num_res_blocks = 3
-    in_channels = 64
-    mid_channels = 16
+    in_channels = 32
+    mid_channels = 8
 
     model = AlphaZeroNet(
         board_size,
@@ -45,7 +45,7 @@ def main():
         weight_decay=1e-4,
         batch_size=batch_size,
     )
-
+    
     for epoch in range(num_epochs):
         logging.info(f"\n===== Epoch {epoch + 1}/{num_epochs} =====")
         print(f"\n===== Epoch {epoch + 1}/{num_epochs} =====")

@@ -16,12 +16,12 @@ class SelfPlay:
 
         while not self.game.is_game_over():
             state = self.game.get_board_state()
-            action, policy = mcts.search(self.game, cur_p)
+            action, policy, policies = mcts.search(self.game, cur_p)
             states.append(state)
-            policies.append(policy)
             self.game = self.game.apply_move(action)
             cur_p = 0 if cur_p == 1 else 1
             print(self.game)
+            
         winner = self.game.get_result(1)
         rewards = [winner for i in range(len(states))]
         return states, policies, rewards

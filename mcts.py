@@ -80,14 +80,15 @@ class Node:
         for move in legal_moves:
             prob = move_probs.get(move, 0)
             new_state = self.state.apply_move(move)
-            child_node = Node(new_state, parent=self, prior=prob, cur_p=cur_p * -1)
+            p = 0 if self.cur_p == 1 else 1 
+            child_node = Node(new_state, parent=self, prior=prob, cur_p=p)
             self.children.append(child_node)
 
     def backpropagate(self, value):
         self.visits += 1
         self.value += value
-        if self.parent:
-            self.parent.backpropagate(value)
+        if self.parent and (type(self.parent) == int or type(self.parent) == float): # why root.visits = 1?
+            self.parent.backpropagate(-value)
 
 
 class MCTS:
@@ -97,9 +98,10 @@ class MCTS:
         self.temperature = temperature
 
     def search(self, initial_state, cur_p):
-        root = Node(initial_state)
-        root.expand([1] * 4032, cur_p)  # 수정 필요
+        root = Node(initial_state, cur_p)
+        root.expand([1] * 4032, cur_p=0)  # 수정 필요
 
+        policies = []
         for _ in range(self.num_simulations):
             node = root
             while not node.state.is_game_over() and node.is_fully_expanded():
@@ -110,15 +112,16 @@ class MCTS:
                 board_state = board_state[np.newaxis, ...]
                 policy, _ = self.model(board_state)
                 policy = policy.squeeze().detach().numpy()
-                node.expand(policy, node.parent.cur_p * -1)
-
-            value = self.simulate(node.state, cur_p)
+                policies.append(policy)
+                node.expand(policy, node.parent.cur_p)
+                
+            value = self.simulate(node.state, node.cur_p) #
             node.backpropagate(value)
 
         action_idx = root.select_action(self.temperature)
         best_child = root.children[action_idx]
 
-        return best_child.state.board.peek(), best_child.prior
+        return best_child.state.board.peek(), best_child.prior, policies
 
     def simulate(self, state, cur_p):
         while not state.is_game_over():
@@ -151,7 +154,7 @@ if __name__ == "__main__":
     print(game)
 
     model = AlphaZeroNet(8, 4032, 5, 64, 16)
-    mcts = MCTS(model, num_simulations=10, temperature=1)
+    mcts = MCTS(model, num_simulations=100, temperature=1)
     best_move = mcts.search(game, 1)
 
     print(f"\nBest move: {best_move}")
