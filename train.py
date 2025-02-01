@@ -8,8 +8,8 @@ from torch.utils.data import DataLoader, TensorDataset
 from self_play import SelfPlay
 from game import ChessGame
 from model import AlphaZeroNet
-
-
+from utils import flatten
+        
 class AlphaZeroTrainer:
     """
     A refactored trainer for an AlphaZero-like approach, incorporating A2C elements such as advantage and entropy bonus.
@@ -141,13 +141,19 @@ class AlphaZeroTrainer:
         """
         self.model.train()
         states, policies, rewards = zip(*training_data)
-
         # Compute discounted returns
-        R = 0.0
-        accumulative_rewards = []
-        for idx, reward in enumerate(reversed(rewards)):
-            R = reward if idx == 0 else self.gamma * R
-            accumulative_rewards.insert(0, R)
+        accumulative_rewards = [[] for _ in range(len(rewards))]
+        
+        for i, r_l in enumerate(rewards):
+            R = 0.0
+            for idx, reward in enumerate(reversed(r_l)):
+                R = reward if idx == 0 else self.gamma * R
+                accumulative_rewards[i].insert(0, R)
+
+        # Flatten
+        states = flatten(states)
+        policies = flatten(policies)
+        accumulative_rewards = flatten(accumulative_rewards)
 
         # Convert to tensors
         device = self.model.device

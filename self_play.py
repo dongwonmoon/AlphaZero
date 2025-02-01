@@ -1,6 +1,6 @@
 import numpy as np
 from mcts import MCTS
-
+import random
 
 class SelfPlay:
     def __init__(self, model, game, num_simulations, temperature):
@@ -24,6 +24,5 @@ class SelfPlay:
             print(self.game)
             
         winner = self.game.get_result(1)
-        rewards = [winner for i in range(len(states))]
-        print(rewards)
-        return states, policies, rewards
+        rewards = [[winner for i in range(len(states))]]
+        return [states], [policies], rewards

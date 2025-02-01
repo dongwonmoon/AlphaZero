@@ -13,9 +13,9 @@ def main():
     board_size = 8
     num_wares = 14
     action_size = 4032
-    num_simulations = 2
+    num_simulations = 30
     num_epochs = 100
-    num_games_per_epoch = 10 # 
+    num_games_per_epoch = 20 # 
     temperature = 1.2
     evaluation_games = 5
     batch_size = 64
@@ -50,6 +50,8 @@ def main():
     )
     
     for epoch in range(num_epochs):
+        if trainer.num_simulations > 10:
+            trainer.num_simulations -= 2
         logging.info(f"\n===== Epoch {epoch + 1}/{num_epochs} =====")
         print(f"\n===== Epoch {epoch + 1}/{num_epochs} =====")
 
