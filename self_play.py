@@ -11,17 +11,23 @@ class SelfPlay:
 
     def play(self):
         mcts = MCTS(self.model, self.num_simulations, self.temperature)
-        cur_p = 1
+        cur_p = 0
         states, policies, rewards = [], [], []
-
+        
+        i = 0
         while not self.game.is_game_over():
             state = self.game.get_board_state()
-            action, policy, policies = mcts.search(self.game, cur_p)
+            action, policy = mcts.search(self.game, cur_p)
             states.append(state)
+            policies.append(policy)
             self.game = self.game.apply_move(action)
             cur_p = 0 if cur_p == 1 else 1
             print(self.game)
+            if i == 10:
+                break
+            i += 1
             
         winner = self.game.get_result(1)
         rewards = [winner for i in range(len(states))]
+        print(rewards)
         return states, policies, rewards
