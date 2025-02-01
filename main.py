@@ -11,20 +11,22 @@ logging.basicConfig(
 
 def main():
     board_size = 8
+    num_wares = 14
     action_size = 4032
-    num_simulations = 10 
+    num_simulations = 2
     num_epochs = 100
     num_games_per_epoch = 10 # 
-    temperature = 1
+    temperature = 1.2
     evaluation_games = 5
-    batch_size = 32
+    batch_size = 64
 
     num_res_blocks = 3
     in_channels = 32
     mid_channels = 8
-
+    
     model = AlphaZeroNet(
         board_size,
+        num_wares,
         action_size,
         num_res_blocks=num_res_blocks,
         in_channels=in_channels,
@@ -35,6 +37,7 @@ def main():
 
     trainer = AlphaZeroTrainer(
         board_size=board_size,
+        num_ware=num_wares,
         action_size=action_size,
         num_simulations=num_simulations,
         num_res_blocks=num_res_blocks,
