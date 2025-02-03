@@ -9,7 +9,8 @@ from self_play import SelfPlay
 from game import ChessGame
 from model import AlphaZeroNet
 from utils import flatten
-        
+
+
 class AlphaZeroTrainer:
     """
     A refactored trainer for an AlphaZero-like approach, incorporating A2C elements such as advantage and entropy bonus.
@@ -47,6 +48,7 @@ class AlphaZeroTrainer:
         batch_size: int = 8,
         entropy_coef: float = 0.01,
         value_loss_coef: float = 1.0,
+        k_epochs: int = 8,
     ):
         """
         Initializes the AlphaZero-like trainer.
@@ -76,6 +78,7 @@ class AlphaZeroTrainer:
         self.batch_size = batch_size
         self.entropy_coef = entropy_coef
         self.value_loss_coef = value_loss_coef
+        self.k_epochs = k_epochs
 
         device = "cuda" if torch.cuda.is_available() else "cpu"
         self.model = AlphaZeroNet(
@@ -98,7 +101,9 @@ class AlphaZeroTrainer:
         """
         for epoch in range(epochs):
             print(f"===== Epoch {epoch + 1}/{epochs} =====")
-            training_data = self.generate_self_play_data_parallel(num_games_per_epoch, max_workers)
+            training_data = self.generate_self_play_data_parallel(
+                num_games_per_epoch, max_workers
+            )
             loss = self.update_model(training_data)
             print(f"Loss after epoch {epoch + 1}: {loss:.6f}")
 
@@ -114,7 +119,10 @@ class AlphaZeroTrainer:
             A list of (state, policy, reward) tuples.
         """
         with ProcessPoolExecutor(max_workers=max_workers) as executor:
-            futures = [executor.submit(self._generate_single_game_data) for _ in range(num_games)]
+            futures = [
+                executor.submit(self._generate_single_game_data)
+                for _ in range(num_games)
+            ]
             results = [f.result() for f in futures]
 
         data = [item for result in results for item in result]
@@ -143,7 +151,7 @@ class AlphaZeroTrainer:
         states, policies, rewards = zip(*training_data)
         # Compute discounted returns
         accumulative_rewards = [[] for _ in range(len(rewards))]
-        
+
         for i, r_l in enumerate(rewards):
             R = 0.0
             for idx, reward in enumerate(reversed(r_l)):
@@ -158,50 +166,59 @@ class AlphaZeroTrainer:
         # Convert to tensors
         device = self.model.device
         states_tensor = torch.tensor(np.array(states), dtype=torch.float32).to(device)
-        policies_tensor = torch.tensor(np.array(policies), dtype=torch.float32).to(device)
-        accumulative_rewards_tensor = torch.tensor(
-            np.array(accumulative_rewards), dtype=torch.float32
-        ).to(device).unsqueeze(1)
+        policies_tensor = torch.tensor(np.array(policies), dtype=torch.float32).to(
+            device
+        )
+        accumulative_rewards_tensor = (
+            torch.tensor(np.array(accumulative_rewards), dtype=torch.float32)
+            .to(device)
+            .unsqueeze(1)
+        )
 
-        dataset = TensorDataset(states_tensor, policies_tensor, accumulative_rewards_tensor)
+        dataset = TensorDataset(
+            states_tensor, policies_tensor, accumulative_rewards_tensor
+        )
         dataloader = DataLoader(dataset, batch_size=self.batch_size, shuffle=True)
 
-        final_loss = 0.0
+        loss_ = 0
+        for _ in range(self.k_epochs):
+            epoch_loss = 0
+            for batch_states, batch_policies, batch_returns in dataloader:
+                pred_policies, pred_values = self.model(batch_states)
 
-        for batch_states, batch_policies, batch_returns in dataloader:
-            pred_policies, pred_values = self.model(batch_states)
+                # Squeeze as necessary
+                pred_values = pred_values.squeeze()
+                batch_returns = batch_returns.squeeze()
 
-            # Squeeze as necessary
-            pred_values = pred_values.squeeze()
-            batch_returns = batch_returns.squeeze()
+                # Advantage = returns - predicted value
+                advantage = batch_returns - pred_values
 
-            # Advantage = returns - predicted value
-            advantage = batch_returns - pred_values
+                # Policy loss with advantage
+                log_probs = torch.log(pred_policies + 1e-10)
+                # Summation across action dimension
+                policy_loss_term = (batch_policies * log_probs).sum(dim=1)
+                policy_loss = -torch.mean(policy_loss_term * advantage.detach())
 
-            # Policy loss with advantage
-            log_probs = torch.log(pred_policies + 1e-10)
-            # Summation across action dimension
-            policy_loss_term = (batch_policies * log_probs).sum(dim=1)
-            policy_loss = -torch.mean(policy_loss_term * advantage.detach())
+                # Entropy bonus
+                entropy = -torch.sum(pred_policies * log_probs, dim=1).mean()
+                entropy_bonus = self.entropy_coef * entropy
 
-            # Entropy bonus
-            entropy = -torch.sum(pred_policies * log_probs, dim=1).mean()
-            entropy_bonus = self.entropy_coef * entropy
+                # Value loss (MSE)
+                value_loss = self.criterion_value(pred_values, batch_returns)
 
-            # Value loss (MSE)
-            value_loss = self.criterion_value(pred_values, batch_returns)
+                # Combine into final loss
+                # A2C typical:  policy_loss + c1*value_loss - c2*entropy
+                loss = policy_loss + (self.value_loss_coef * value_loss) - entropy_bonus
 
-            # Combine into final loss
-            # A2C typical:  policy_loss + c1*value_loss - c2*entropy
-            loss = policy_loss + (self.value_loss_coef * value_loss) - entropy_bonus
+                self.optimizer.zero_grad()
+                loss.backward()
+                self.optimizer.step()
 
-            self.optimizer.zero_grad()
-            loss.backward()
-            self.optimizer.step()
+                epoch_loss += loss.item()
+            epoch_loss /= len(dataloader)
+            loss_ += epoch_loss
 
-            final_loss = loss.item()
-
-        return final_loss
+        return loss_ / self.k_epochs
 
     def save_model(self, filepath: str) -> None:
         """

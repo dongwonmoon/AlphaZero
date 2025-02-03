@@ -13,9 +13,9 @@ def main():
     board_size = 8
     num_wares = 14
     action_size = 4032
-    num_simulations = 30
+    num_simulations = 20
     num_epochs = 100
-    num_games_per_epoch = 20 # 
+    num_games_per_epoch = 10  #
     temperature = 1.2
     evaluation_games = 5
     batch_size = 64
@@ -23,7 +23,7 @@ def main():
     num_res_blocks = 3
     in_channels = 32
     mid_channels = 8
-    
+
     model = AlphaZeroNet(
         board_size,
         num_wares,
@@ -48,7 +48,7 @@ def main():
         weight_decay=1e-4,
         batch_size=batch_size,
     )
-    
+
     for epoch in range(num_epochs):
         if trainer.num_simulations > 10:
             trainer.num_simulations -= 2
